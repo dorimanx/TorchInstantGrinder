@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using InstantGrinder.Patches;
@@ -27,51 +26,71 @@ namespace InstantGrinder.Core
             _config = config;
         }
 
-        public void GrindGridByName(MyPlayer playerOrNull, string gridName, bool force, bool asPlayer)
+        public void GrindGridByName(MyPlayer playerOrNull, string gridName, bool force, bool asPlayer, out CheckResult resultFinal, out string StatusFinal)
         {
             if (!_config.Enabled)
             {
-                throw new InvalidOperationException("Plugin not active");
+                resultFinal = CheckResult.OFFLINE;
+                StatusFinal = "";
+                return;
             }
 
             if (!Utils.TryGetGridGroupByName(gridName, out var gridGroup))
             {
-                throw new InvalidOperationException($"Not found: {gridName}");
+                resultFinal = CheckResult.GRID_NOT_FOUND;
+                StatusFinal = gridName;
+                return;
             }
 
-            GrindGrids(playerOrNull, gridGroup, force, asPlayer);
+            GrindGrids(playerOrNull, gridGroup, force, asPlayer, out CheckResult result, out string Status);
+
+            resultFinal = result;
+            StatusFinal = Status;
         }
 
-        public void GrindGridSelected(MyPlayer playerOrNull, bool force, bool asPlayer)
+        public void GrindGridSelected(MyPlayer playerOrNull, bool force, bool asPlayer, out CheckResult result, out string Status)
         {
             if (!_config.Enabled)
             {
-                throw new InvalidOperationException("Plugin not active");
+                result = CheckResult.OFFLINE;
+                Status = "";
+                return;
             }
 
             if (playerOrNull == null)
             {
-                throw new InvalidOperationException("Character required");
+                result = CheckResult.NOPLAYER;
+                Status = "";
+                return;
             }
 
             if (!playerOrNull.TryGetSelectedGrid(out var grid))
             {
-                throw new InvalidOperationException("Not found");
+                result = CheckResult.GRID_NOT_FOUND;
+                Status = "";
+                return;
             }
 
             var gridGroup = MyCubeGridGroups.Static.Logical.GetGroup(grid);
             var grids = gridGroup.Nodes.Select(n => n.NodeData).ToArray();
-            GrindGrids(playerOrNull, grids, force, asPlayer);
+
+            GrindGrids(playerOrNull, grids, force, asPlayer, out CheckResult result2, out string StatusInternal);
+
+            result = result2;
+            Status = StatusInternal;
         }
 
-        void GrindGrids(IMyPlayer playerOrNull, IReadOnlyList<MyCubeGrid> gridGroup, bool force, bool asPlayer)
+        void GrindGrids(IMyPlayer playerOrNull, IReadOnlyList<MyCubeGrid> gridGroup, bool force, bool asPlayer, out CheckResult result, out string StatusInternal)
         {
             // don't let non-owners grind a grid
             var isNormalPlayer = playerOrNull?.IsNormalPlayer() ?? false;
             isNormalPlayer |= asPlayer; // pretend like a normal player as an admin
+
             if (isNormalPlayer && !playerOrNull.OwnsAll(gridGroup))
             {
-                throw new InvalidOperationException("Not yours");
+                result = CheckResult.OWNED_BY_DIFFERENT_PLAYER;
+                StatusInternal = "";
+                return;
             }
 
             foreach (var grid in gridGroup)
@@ -81,14 +100,18 @@ namespace InstantGrinder.Core
                 {
                     if (!safeZone.IsOutside(grid))
                     {
-                        throw new InvalidOperationException($"In a safe zone: {grid.DisplayName}");
+                        result = CheckResult.INSAFEZONE;
+                        StatusInternal = grid.DisplayName;
+                        return;
                     }
                 }
 
                 // projector doesn't work either
                 if (grid.Physics == null)
                 {
-                    throw new InvalidOperationException($"Projected grid: {grid.DisplayName}");
+                    result = CheckResult.PROJECTED;
+                    StatusInternal = grid.DisplayName;
+                    return;
                 }
 
                 // distance filter
@@ -99,7 +122,9 @@ namespace InstantGrinder.Core
                     var distance = Vector3D.Distance(gridPosition, playerPosition);
                     if (distance > _config.MaxDistance)
                     {
-                        throw new InvalidOperationException($"Too far: {grid.DisplayName}");
+                        result = CheckResult.TOOFAR;
+                        StatusInternal = grid.DisplayName;
+                        return;
                     }
                 }
             }
@@ -109,21 +134,35 @@ namespace InstantGrinder.Core
             {
                 var msgBuilder = new StringBuilder();
                 msgBuilder.AppendLine("Multiple grids found:");
+
                 foreach (var grid in gridGroup)
                 {
                     msgBuilder.AppendLine($" + {grid.DisplayName}");
                 }
 
-                throw new InvalidOperationException(msgBuilder.ToString());
+                result = CheckResult.TOO_MANY_GRIDS;
+                StatusInternal = msgBuilder.ToString();
+                return;
             }
 
             // don't grind too many items, unless specified
             var itemCount = Utils.GetItemCount(gridGroup);
+
             if (itemCount > _config.MaxItemCount && !force)
             {
                 var msgBuilder = new StringBuilder();
                 msgBuilder.AppendLine($"Too many items: {itemCount}");
-                throw new InvalidOperationException(msgBuilder.ToString());
+
+                result = CheckResult.TOOMANYITEMS;
+                StatusInternal = msgBuilder.ToString();
+                return;
+            }
+
+            var msgBuilderFinal = new StringBuilder();
+
+            foreach (var grid in gridGroup)
+            {
+                msgBuilderFinal.AppendLine($" + {grid.DisplayName}");
             }
 
             if (playerOrNull is MyPlayer player)
@@ -134,6 +173,9 @@ namespace InstantGrinder.Core
             {
                 GrindGrids(gridGroup);
             }
+
+            result = CheckResult.OK;
+            StatusInternal = msgBuilderFinal.ToString();
         }
 
         void GrindGrids(IEnumerable<MyCubeGrid> gridGroup)

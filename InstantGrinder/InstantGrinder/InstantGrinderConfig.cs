@@ -34,4 +34,18 @@ namespace InstantGrinder
             set => SetValue(ref _maxItemCount, value);
         }
     }
+
+    public enum CheckResult
+    {
+        OK,
+        TOO_MANY_GRIDS,
+        OWNED_BY_DIFFERENT_PLAYER,
+        GRID_NOT_FOUND,
+        OFFLINE,
+        NOPLAYER,
+        INSAFEZONE,
+        PROJECTED,
+        TOOFAR,
+        TOOMANYITEMS,
+    }
 }

@@ -20,9 +20,6 @@ namespace InstantGrinder.Patches
         static readonly MethodInfo Method = typeof(MySafeZone).GetMethod(MethodName, Flags, null, ParameterTypes, null);
         static readonly MethodDelegate MethodDelegateInstance = (MethodDelegate) Delegate.CreateDelegate(typeof(MethodDelegate), Method);
 
-        public static bool IsOutside(this MySafeZone self, MyEntity entity)
-        {
-            return MethodDelegateInstance(self, entity);
-        }
+        public static bool IsOutside(this MySafeZone self, MyEntity entity) => MethodDelegateInstance(self, entity);
     }
 }

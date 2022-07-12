@@ -28,9 +28,6 @@ namespace InstantGrinder
             _grinder = new Core.InstantGrinder(Config);
         }
 
-        public UserControl GetControl()
-        {
-            return _config.GetOrCreateUserControl(ref _userControl);
-        }
+        public UserControl GetControl() => _config.GetOrCreateUserControl(ref _userControl);
     }
 }
