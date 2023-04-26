@@ -26,7 +26,7 @@ namespace InstantGrinder.Core
             _config = config;
         }
 
-        public void GrindGridByName(MyPlayer playerOrNull, string gridName, bool force, bool asPlayer, out CheckResult resultFinal, out string StatusFinal)
+        public void GrindGridByName(MyPlayer playerOrNull, string gridName, bool force, out CheckResult resultFinal, out string StatusFinal)
         {
             if (!_config.Enabled)
             {
@@ -42,13 +42,13 @@ namespace InstantGrinder.Core
                 return;
             }
 
-            GrindGrids(playerOrNull, gridGroup, force, asPlayer, out CheckResult result, out string Status);
+            GrindGrids(playerOrNull, gridGroup, force, out CheckResult result, out string Status);
 
             resultFinal = result;
             StatusFinal = Status;
         }
 
-        public void GrindGridSelected(MyPlayer playerOrNull, bool force, bool asPlayer, out CheckResult result, out string Status)
+        public void GrindGridSelected(MyPlayer playerOrNull, bool force, out CheckResult result, out string Status)
         {
             if (!_config.Enabled)
             {
@@ -74,23 +74,25 @@ namespace InstantGrinder.Core
             var gridGroup = MyCubeGridGroups.Static.Logical.GetGroup(grid);
             var grids = gridGroup.Nodes.Select(n => n.NodeData).ToArray();
 
-            GrindGrids(playerOrNull, grids, force, asPlayer, out CheckResult result2, out string StatusInternal);
+            GrindGrids(playerOrNull, grids, force, out CheckResult result2, out string StatusInternal);
 
             result = result2;
             Status = StatusInternal;
         }
 
-        void GrindGrids(IMyPlayer playerOrNull, IReadOnlyList<MyCubeGrid> gridGroup, bool force, bool asPlayer, out CheckResult result, out string StatusInternal)
+        void GrindGrids(IMyPlayer playerOrNull, IReadOnlyList<MyCubeGrid> gridGroup, bool force, out CheckResult result, out string StatusInternal)
         {
-            // don't let non-owners grind a grid
-            var isNormalPlayer = playerOrNull?.IsNormalPlayer() ?? false;
-            isNormalPlayer |= asPlayer; // pretend like a normal player as an admin
+            var IsPlayerAdmin = playerOrNull.PromoteLevel == MyPromoteLevel.Admin;
 
-            if (isNormalPlayer && !playerOrNull.OwnsAll(gridGroup))
+            // don't let non-owners grind a grid
+            if (!playerOrNull.OwnsAll(gridGroup))
             {
-                result = CheckResult.OWNED_BY_DIFFERENT_PLAYER;
-                StatusInternal = "";
-                return;
+                if (!IsPlayerAdmin)
+                {
+                    result = CheckResult.OWNED_BY_DIFFERENT_PLAYER;
+                    StatusInternal = "";
+                    return;
+                }
             }
 
             foreach (var grid in gridGroup)

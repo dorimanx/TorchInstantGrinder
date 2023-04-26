@@ -10,7 +10,7 @@ namespace InstantGrinder
     [Category("grind")]
     public sealed class InstantGrinderCommandModule : CommandModule
     {
-        static readonly Logger Log = LogManager.GetCurrentClassLogger();
+        //static readonly Logger Log = LogManager.GetCurrentClassLogger();
         InstantGrinderPlugin Plugin => (InstantGrinderPlugin) Context.Plugin;
         InstantGrinderConfig Config => Plugin.Config;
         Core.InstantGrinder Grinder => Plugin.Grinder;
@@ -25,9 +25,9 @@ namespace InstantGrinder
 
         [Command("name", "Grind a grid by name.")]
         [Permission(MyPromoteLevel.None)]
-        public void GrindByName(string gridName, bool force = false, bool asPlayer = false) => this.CatchAndReport(() =>
+        public void GrindByName(string gridName, bool force = false) => this.CatchAndReport(() =>
         {
-            Grinder.GrindGridByName(Context.Player as MyPlayer, gridName, force, asPlayer, out CheckResult result, out string status);
+            Grinder.GrindGridByName(Context.Player as MyPlayer, gridName, force, out CheckResult result, out string status);
 
             if (result != CheckResult.OK)
             {
@@ -47,9 +47,9 @@ namespace InstantGrinder
 
         [Command("this", "Grind a grid that the player is looking at or seated on.")]
         [Permission(MyPromoteLevel.None)]
-        public void GrindThis(bool force = false, bool asPlayer = false) => this.CatchAndReport(() =>
+        public void GrindThis(bool force = false) => this.CatchAndReport(() =>
         {
-            Grinder.GrindGridSelected(Context.Player as MyPlayer, force, asPlayer, out CheckResult result, out string status);
+            Grinder.GrindGridSelected(Context.Player as MyPlayer, force, out CheckResult result, out string status);
 
             if (result != CheckResult.OK)
             {
