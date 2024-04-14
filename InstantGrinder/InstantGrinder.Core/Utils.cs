@@ -87,10 +87,10 @@ namespace InstantGrinder.Core
                 dst.AddItemsInternal(item.Content, item.Amount);
             }
 
-            GrindBlock(src);
+            src.Remove();
         }
 
-        public static void GrindBlock(MySlimBlock block) => block.CubeGrid.RazeBlock(block.Min);
+        public static void Remove(this MySlimBlock block) => block.CubeGrid.RazeBlock(block.Min);
 
         public static Vector3D AvgPosition(IReadOnlyList<IMyEntity> entities) => entities.Aggregate(Vector3D.Zero, (s, n) => s + n.GetPosition()) / entities.Count;
     }

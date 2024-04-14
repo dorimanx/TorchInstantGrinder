@@ -173,19 +173,15 @@ namespace InstantGrinder.Core
             }
             else // nobody will receive the items
             {
-                GrindGrids(gridGroup);
+                var blocks = gridGroup.SelectMany(g => g.CubeBlocks).ToArray();
+                foreach (var block in blocks)
+                {
+                    block.Remove();
+                }
             }
 
             result = CheckResult.OK;
             StatusInternal = msgBuilderFinal.ToString();
-        }
-
-        void GrindGrids(IEnumerable<MyCubeGrid> gridGroup)
-        {
-            foreach (var block in gridGroup.SelectMany(g => g.CubeBlocks))
-            {
-                Utils.GrindBlock(block);
-            }
         }
 
         void GrindGridsIntoPlayerInventory(IEnumerable<MyCubeGrid> gridGroup, MyPlayer player)
